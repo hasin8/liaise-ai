@@ -1,1 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #edf7ff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #generatedImage {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">AI Image Generator</h1>
+        <form id="imageGeneratorForm">
+            <div class="mb-3">
+                <label for="textInput" class="form-label">Image Description</label>
+                <textarea class="form-control" id="textInput" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="styleSelect" class="form-label">Style</label>
+                <select class="form-select" id="styleSelect">
+                    <option value="realistic">Realistic</option>
+                    <option value="cartoon">Cartoon</option>
+                    <option value="digital-art">Digital Art</option>
+                    <option value="abstract">Abstract</option>
+                    <option value="anime">Anime</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="backgroundSelect" class="form-label">Background</label>
+                <select class="form-select" id="backgroundSelect">
+                    <option value="nature">Nature</option>
+                    <option value="cityscape">Cityscape</option>
+                    <option value="abstract">Abstract</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="resolutionSelect" class="form-label">Resolution</label>
+                <select class="form-select" id="resolutionSelect">
+                    <option value="standard">Standard</option>
+                    <option value="hd">HD</option>
+                    <option value="4k">4K</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Generate Image</button>
+        </form>
+        <div id="imageContainer" class="mt-4 text-center">
+            <img id="generatedImage" src="data:," alt="Generated Image" style="display: none;">
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_KEY = 'YOUR_API_KEY_HERE'; // Replace with your actual API key
+        const API_HOST = 'https://api.stability.ai';
+
+        document.getElementById('imageGeneratorForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const prompt = document.getElementById('textInput').value;
+            const style = document.getElementById('styleSelect').value;
+            const background = document.getElementById('backgroundSelect').value;
+            const resolution = document.getElementById('resolutionSelect').value;
+
+            const fullPrompt = `${prompt}, ${style} style, ${background} background`;
+
+            try {
+                // Log the request details
+                console.log('Sending request with prompt:', fullPrompt);
+                console.log('Resolution:', resolution);
+
+                const response = await fetch(`${API_HOST}/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        text_prompts: [{ text: fullPrompt }],
+                        cfg_scale: 7,
+                        height: resolution === '4k' ? 2048 : (resolution === 'hd' ? 1024 : 512),
+                        width: resolution === '4k' ? 2048 : (resolution === 'hd' ? 1024 : 512),
+                        steps: 30,
+                        samples: 1,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const result = await response.json();
+                const image = result.artifacts[0];
+                
+                const generatedImage = document.getElementById('generatedImage');
+                generatedImage.src = `data:image/png;base64,${image.base64}`;
+                generatedImage.style.display = 'block';
+            } catch (error) {
+                console.error('Detailed error:', error);
+                alert(`Failed to generate image. Error: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
 
